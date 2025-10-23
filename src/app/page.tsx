@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Toaster } from "sonner";
 
 export default function Home() {
   return (
@@ -60,6 +61,8 @@ export default function Home() {
           </a>
         </div>
       </main>
+
+      <Toaster />
     </div>
   );
 }

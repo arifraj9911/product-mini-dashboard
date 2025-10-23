@@ -221,9 +221,9 @@ export default function AddProduct() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-linear-to-br from-slate-50 to-blue-50 dark:from-neutral-900 dark:to-slate-900">
+    <div className="min-h-screen flex items-center justify-center md:p-4 bg-linear-to-br from-slate-50 to-blue-50 dark:from-neutral-900 dark:to-slate-900">
       <Card className="w-full max-w-3xl mx-auto shadow-xl border-slate-200 dark:border-slate-700">
-        <CardHeader className="text-center pb-4">
+        <CardHeader className="text-center md:pb-4">
           <CardTitle className="text-2xl font-bold bg-linear-to-r from-slate-800 to-slate-600 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
             Add New Product
           </CardTitle>
@@ -233,49 +233,100 @@ export default function AddProduct() {
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="px-6">
-          <div className="flex justify-center mb-8">
-            <div className="flex items-center space-x-4">
-              {["basic", "inventory", "media", "review"].map((step, index) => (
-                <React.Fragment key={step}>
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                        currentStep === step
-                          ? "bg-blue-600 text-white"
-                          : index <
-                            ["basic", "inventory", "media", "review"].indexOf(
-                              currentStep
-                            )
-                          ? "bg-green-500 text-white"
-                          : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
-                      }`}
-                    >
-                      {index <
-                      ["basic", "inventory", "media", "review"].indexOf(
-                        currentStep
-                      ) ? (
-                        <CheckCircle2 size={16} />
-                      ) : (
-                        index + 1
-                      )}
+        <CardContent className="md:px-6">
+          <div className="md:flex justify-center mb-12 hidden">
+            <div className="flex items-start space-x-0.5">
+              {["basic", "inventory", "media", "review"].map((step, index) => {
+                const stepIndex = [
+                  "basic",
+                  "inventory",
+                  "media",
+                  "review",
+                ].indexOf(currentStep);
+                const isCompleted = index < stepIndex;
+                const isCurrent = currentStep === step;
+                const isUpcoming = index > stepIndex;
+
+                return (
+                  <React.Fragment key={step}>
+                    <div className="flex flex-col items-center">
+                      {/* Step circle */}
+                      <div
+                        className={`
+                relative w-12 h-12 rounded-full flex items-center justify-center 
+                text-sm font-semibold transition-all duration-300 ease-in-out
+                border-2 ${
+                  isCurrent
+                    ? "border-blue-600 bg-blue-600 text-white scale-110 shadow-lg"
+                    : isCompleted
+                    ? "border-green-500 bg-green-500 text-white"
+                    : isUpcoming
+                    ? "border-slate-300 bg-white text-slate-400 dark:border-slate-600 dark:bg-slate-800"
+                    : "border-blue-600 bg-white text-blue-600"
+                }
+              `}
+                      >
+                        {isCompleted ? (
+                          <CheckCircle2 size={20} className="text-white" />
+                        ) : (
+                          <span className="flex items-center justify-center w-full h-full">
+                            {index + 1}
+                          </span>
+                        )}
+
+                        {isCurrent && (
+                          <div className="absolute inset-0 rounded-full bg-blue-600 animate-ping opacity-20" />
+                        )}
+                      </div>
+
+                      {/* Step label */}
+                      <span
+                        className={`
+              text-sm font-medium mt-3 capitalize transition-colors duration-200
+              ${
+                isCurrent
+                  ? "text-blue-600 dark:text-blue-400 font-semibold"
+                  : isCompleted
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-slate-500 dark:text-slate-400"
+              }
+            `}
+                      >
+                        {step}
+                      </span>
+
+                      {/* Step description */}
+                      {/* <span className="text-xs text-slate-400 dark:text-slate-500 mt-1 text-center max-w-20">
+                        {step === "basic" && "Product Details"}
+                        {step === "inventory" && "Stock & Pricing"}
+                        {step === "media" && "Images & Files"}
+                        {step === "review" && "Final Review"}
+                      </span> */}
                     </div>
-                    <span className="text-xs mt-2 capitalize">{step}</span>
-                  </div>
-                  {index < 3 && (
-                    <div
-                      className={`w-12 h-1 ${
-                        index <
-                        ["basic", "inventory", "media", "review"].indexOf(
-                          currentStep
-                        )
-                          ? "bg-green-500"
-                          : "bg-slate-200 dark:bg-slate-700"
-                      }`}
-                    />
-                  )}
-                </React.Fragment>
-              ))}
+
+                    {/* Connector line - TOP ALIGNED with circles */}
+                    {index < 3 && (
+                      <div className="relative flex items-start mt-6">
+                        {" "}
+                        {/* Added mt-6 to align with circle top */}
+                        <div
+                          className={`
+                  w-24 h-1 rounded-full transition-all duration-500 ease-out
+                  ${
+                    isCompleted
+                      ? "bg-linear-to-r from-green-500 to-green-400"
+                      : "bg-slate-200 dark:bg-slate-700"
+                  }
+                `}
+                        />
+                        {index === stepIndex - 1 && (
+                          <div className="absolute w-24 h-1 rounded-full bg-linear-to-r from-green-500 to-green-400 animate-pulse" />
+                        )}
+                      </div>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </div>
           </div>
 

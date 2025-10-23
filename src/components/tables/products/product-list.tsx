@@ -25,7 +25,7 @@ import {
   Eye,
   Package,
   TrendingUp,
-//   Truck,
+  //   Truck,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -70,10 +70,10 @@ export type Product = {
   description?: string;
   active: boolean;
   createdAt: string;
-  satisfaction?: number; 
-  deliveryProgress?: number; 
-  salesData?: number[]; 
-  imageUrl?:string
+  satisfaction?: number;
+  deliveryProgress?: number;
+  salesData?: number[];
+  imageUrl?: string;
 };
 
 // Generate sample data if localStorage is empty
@@ -91,7 +91,7 @@ const generateSampleData = (): Product[] => [
     satisfaction: 4,
     deliveryProgress: 85,
     salesData: [12, 19, 8, 15, 22, 18, 25],
-    imageUrl:""
+    imageUrl: "",
   },
   {
     id: "2",
@@ -106,7 +106,7 @@ const generateSampleData = (): Product[] => [
     satisfaction: 5,
     deliveryProgress: 45,
     salesData: [5, 8, 12, 6, 9, 11, 7],
-    imageUrl:""
+    imageUrl: "",
   },
   {
     id: "3",
@@ -121,7 +121,7 @@ const generateSampleData = (): Product[] => [
     satisfaction: 3,
     deliveryProgress: 100,
     salesData: [45, 38, 52, 48, 61, 55, 49],
-    imageUrl:""
+    imageUrl: "",
   },
   {
     id: "4",
@@ -136,7 +136,7 @@ const generateSampleData = (): Product[] => [
     satisfaction: 2,
     deliveryProgress: 0,
     salesData: [0, 0, 0, 0, 0, 0, 0],
-    imageUrl:""
+    imageUrl: "",
   },
   {
     id: "5",
@@ -151,7 +151,7 @@ const generateSampleData = (): Product[] => [
     satisfaction: 4,
     deliveryProgress: 90,
     salesData: [8, 12, 6, 14, 10, 13, 9],
-    imageUrl:""
+    imageUrl: "",
   },
 ];
 
@@ -272,39 +272,43 @@ export const columns: ColumnDef<Product>[] = [
     enableHiding: false,
   },
   {
-  accessorKey: "productName",
-  header: ({ column }) => {
-    return (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        className="pl-0"
-      >
-        Product Name
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    );
-  },
-  cell: ({ row }) => (
-    <div className="flex items-center gap-3">
-      {row.original?.imageUrl ? (
-        <img 
-          src={row.original.imageUrl} 
-          alt={row.getValue("productName")} 
-          className="w-8 h-8 object-cover rounded-lg"
-        />
-      ) : (
-        <div className=" w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center dark:bg-blue-900">
-          <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+    accessorKey: "productName",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="pl-0"
+        >
+          Product Name
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => (
+      <div className="flex items-center gap-3">
+        {row.original?.imageUrl ? (
+          <img
+            src={row.original.imageUrl}
+            alt={row.getValue("productName")}
+            className="w-8 h-8 object-cover rounded-lg"
+          />
+        ) : (
+          <div className=" w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center dark:bg-blue-900">
+            <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          </div>
+        )}
+        <div className="flex flex-col">
+          <span className="font-medium text-sm">
+            {row.getValue("productName")}
+          </span>
+          <span className="text-xs text-gray-500 font-mono">
+            {row.original.sku}
+          </span>
         </div>
-      )}
-      <div className="flex flex-col">
-        <span className="font-medium text-sm">{row.getValue("productName")}</span>
-        <span className="text-xs text-gray-500 font-mono">{row.original.sku}</span>
       </div>
-    </div>
-  ),
-},
+    ),
+  },
   {
     accessorKey: "category",
     header: "Category",
@@ -339,7 +343,7 @@ export const columns: ColumnDef<Product>[] = [
         currency: "USD",
       }).format(price);
 
-      return <div className="text-right font-medium">{formatted}</div>;
+      return <div className="text-center font-medium">{formatted}</div>;
     },
   },
   {
@@ -570,27 +574,7 @@ export default function ProductList() {
     <div className="w-full space-y-4">
       {/* Filters */}
       <div className="flex flex-col lg:flex-row gap-4 p-4 bg-white dark:bg-slate-800 rounded-lg border">
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Product Name Filter */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">
-              Search Products
-            </label>
-            <Input
-              placeholder="Filter products..."
-              value={
-                (table.getColumn("productName")?.getFilterValue() as string) ??
-                ""
-              }
-              onChange={(event) =>
-                table
-                  .getColumn("productName")
-                  ?.setFilterValue(event.target.value)
-              }
-              className="w-full"
-            />
-          </div>
-
+        <div className="flex-1 flex flex-col md:flex-row justify-start md:justify-between items-start md:items-center gap-4">
           {/* Category Filter */}
           <div>
             <label className="text-sm font-medium mb-2 block">Category</label>
@@ -610,8 +594,8 @@ export default function ProductList() {
           </div>
 
           {/* Price Range Filter */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">
+          <div className=" flex-1">
+            <label className="text-sm font-medium mb-2 block md:w-2/5 md:ml-auto">
               Price Range: ${priceRange[0]} - ${priceRange[1]}
             </label>
             <Slider
@@ -619,9 +603,9 @@ export default function ProductList() {
               onValueChange={(value) =>
                 setPriceRange(value as [number, number])
               }
-              max={1000}
-              step={10}
-              className="w-full"
+              max={5000}
+              step={20}
+              className="md:w-2/5 md:ml-auto"
             />
           </div>
         </div>

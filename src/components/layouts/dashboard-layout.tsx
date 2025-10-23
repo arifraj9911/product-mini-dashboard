@@ -217,18 +217,7 @@ export default function DashboardLayout({
                     Create Order
                   </span>
                 </Link>
-                <Link
-                  href="/dashboard/orders/analytics"
-                  className={cn(
-                    "block px-4 py-2 text-sm hover:bg-slate-700/30 rounded-r-lg transition-all duration-200 group",
-                    pathname === "/dashboard/orders/analytics" &&
-                      "bg-purple-500/20 text-purple-400 border-l border-purple-400"
-                  )}
-                >
-                  <span className="group-hover:translate-x-1 transition-transform duration-200 block">
-                    Order Analytics
-                  </span>
-                </Link>
+                
               </div>
             )}
           </div>
