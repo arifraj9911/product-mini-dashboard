@@ -23,7 +23,7 @@ This project demonstrates CRUD operations for **products and orders**, using moc
 
 ---
 
-  → _Login credentials:_  
+## Login Credential  
   **Email:** `admin@gmail.com`  
   **Password:** `admin`
 - **Theme Persistence** using localStorage
