@@ -44,7 +44,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Image, Upload, CheckCircle2 } from "lucide-react";
+import { Image, Upload, CheckCircle2, AlertCircle } from "lucide-react";
 
 const formSchema = z.object({
   productName: z
@@ -98,6 +98,25 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+// Step validation schemas
+const stepSchemas = {
+  basic: z.object({
+    productName: formSchema.shape.productName,
+    description: formSchema.shape.description,
+  }),
+  inventory: z.object({
+    sku: formSchema.shape.sku,
+    category: formSchema.shape.category,
+    price: formSchema.shape.price,
+    stockQuantity: formSchema.shape.stockQuantity,
+  }),
+  media: z.object({
+    satisfaction: formSchema.shape.satisfaction,
+    deliveryProgress: formSchema.shape.deliveryProgress,
+  }),
+  review: formSchema,
+};
+
 export default function AddProduct() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState("basic");
@@ -117,6 +136,7 @@ export default function AddProduct() {
       satisfaction: "",
       deliveryProgress: "",
     },
+    mode: "onChange",
   });
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -158,6 +178,36 @@ export default function AddProduct() {
 
   const generateUniqueId = () => {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
+  };
+
+  // Validate current step before proceeding
+  const validateStep = async (step: string): Promise<boolean> => {
+    const stepSchema = stepSchemas[step as keyof typeof stepSchemas];
+    
+    try {
+      await stepSchema.parseAsync(form.getValues());
+      return true;
+    } catch (error) {
+      // Trigger validation to show errors
+      await form.trigger(Object.keys(stepSchema.shape) as any);
+      return false;
+    }
+  };
+
+  const handleNextStep = async (nextStep: string) => {
+    const isValid = await validateStep(currentStep);
+    if (isValid) {
+      setCurrentStep(nextStep);
+    } else {
+      toast.error("Please fill all required fields correctly", {
+        description: "Check the form for errors before proceeding.",
+        position: "top-center",
+      });
+    }
+  };
+
+  const handlePreviousStep = (prevStep: string) => {
+    setCurrentStep(prevStep);
   };
 
   async function onSubmit(data: FormData) {
@@ -220,6 +270,19 @@ export default function AddProduct() {
     }).format(number);
   };
 
+  // Check if current step is valid
+  const isStepValid = (step: string): boolean => {
+    const stepFields = Object.keys(stepSchemas[step as keyof typeof stepSchemas].shape);
+    return stepFields.every(field => !form.formState.errors[field as keyof FormData]);
+  };
+
+  const steps = [
+    { id: "basic", label: "Basic", fields: ["productName", "description"] },
+    { id: "inventory", label: "Inventory", fields: ["sku", "category", "price", "stockQuantity"] },
+    { id: "media", label: "Media", fields: ["satisfaction", "deliveryProgress"] },
+    { id: "review", label: "Review", fields: [] }
+  ];
+
   return (
     <div className="min-h-screen flex items-center justify-center md:p-4 bg-linear-to-br from-slate-50 to-blue-50 dark:from-neutral-900 dark:to-slate-900">
       <Card className="w-full max-w-3xl mx-auto shadow-xl border-slate-200 dark:border-slate-700">
@@ -228,46 +291,44 @@ export default function AddProduct() {
             Add New Product
           </CardTitle>
           <CardDescription>
-            Fill in the product details below. Fields marked with * are
-            required.
+            Fill in the product details below. Fields marked with * are required.
           </CardDescription>
         </CardHeader>
 
         <CardContent className="md:px-6">
           <div className="md:flex justify-center mb-12 hidden">
             <div className="flex items-start space-x-0.5">
-              {["basic", "inventory", "media", "review"].map((step, index) => {
-                const stepIndex = [
-                  "basic",
-                  "inventory",
-                  "media",
-                  "review",
-                ].indexOf(currentStep);
+              {steps.map((step, index) => {
+                const stepIndex = steps.findIndex(s => s.id === currentStep);
                 const isCompleted = index < stepIndex;
-                const isCurrent = currentStep === step;
+                const isCurrent = currentStep === step.id;
                 const isUpcoming = index > stepIndex;
+                const isValid = isStepValid(step.id);
 
                 return (
-                  <React.Fragment key={step}>
+                  <React.Fragment key={step.id}>
                     <div className="flex flex-col items-center">
                       {/* Step circle */}
                       <div
                         className={`
-                relative w-12 h-12 rounded-full flex items-center justify-center 
-                text-sm font-semibold transition-all duration-300 ease-in-out
-                border-2 ${
-                  isCurrent
-                    ? "border-blue-600 bg-blue-600 text-white scale-110 shadow-lg"
-                    : isCompleted
-                    ? "border-green-500 bg-green-500 text-white"
-                    : isUpcoming
-                    ? "border-slate-300 bg-white text-slate-400 dark:border-slate-600 dark:bg-slate-800"
-                    : "border-blue-600 bg-white text-blue-600"
-                }
-              `}
+                          relative w-12 h-12 rounded-full flex items-center justify-center 
+                          text-sm font-semibold transition-all duration-300 ease-in-out
+                          border-2 ${
+                            isCurrent
+                              ? "border-blue-600 bg-blue-600 text-white scale-110 shadow-lg"
+                              : isCompleted
+                              ? "border-green-500 bg-green-500 text-white"
+                              : isUpcoming
+                              ? "border-slate-300 bg-white text-slate-400 dark:border-slate-600 dark:bg-slate-800"
+                              : "border-blue-600 bg-white text-blue-600"
+                          }
+                          ${!isValid && isCurrent ? "border-red-500 bg-red-500 text-white" : ""}
+                        `}
                       >
                         {isCompleted ? (
                           <CheckCircle2 size={20} className="text-white" />
+                        ) : !isValid && isCurrent ? (
+                          <AlertCircle size={20} className="text-white" />
                         ) : (
                           <span className="flex items-center justify-center w-full h-full">
                             {index + 1}
@@ -275,49 +336,43 @@ export default function AddProduct() {
                         )}
 
                         {isCurrent && (
-                          <div className="absolute inset-0 rounded-full bg-blue-600 animate-ping opacity-20" />
+                          <div className={`absolute inset-0 rounded-full animate-ping opacity-20 ${
+                            !isValid ? "bg-red-500" : "bg-blue-600"
+                          }`} />
                         )}
                       </div>
 
                       {/* Step label */}
                       <span
                         className={`
-              text-sm font-medium mt-3 capitalize transition-colors duration-200
-              ${
-                isCurrent
-                  ? "text-blue-600 dark:text-blue-400 font-semibold"
-                  : isCompleted
-                  ? "text-green-600 dark:text-green-400"
-                  : "text-slate-500 dark:text-slate-400"
-              }
-            `}
+                          text-sm font-medium mt-3 capitalize transition-colors duration-200
+                          ${
+                            isCurrent
+                              ? !isValid 
+                                ? "text-red-600 dark:text-red-400 font-semibold"
+                                : "text-blue-600 dark:text-blue-400 font-semibold"
+                              : isCompleted
+                              ? "text-green-600 dark:text-green-400"
+                              : "text-slate-500 dark:text-slate-400"
+                          }
+                        `}
                       >
-                        {step}
+                        {step.label}
                       </span>
-
-                      {/* Step description */}
-                      {/* <span className="text-xs text-slate-400 dark:text-slate-500 mt-1 text-center max-w-20">
-                        {step === "basic" && "Product Details"}
-                        {step === "inventory" && "Stock & Pricing"}
-                        {step === "media" && "Images & Files"}
-                        {step === "review" && "Final Review"}
-                      </span> */}
                     </div>
 
-                    {/* Connector line - TOP ALIGNED with circles */}
-                    {index < 3 && (
+                    {/* Connector line */}
+                    {index < steps.length - 1 && (
                       <div className="relative flex items-start mt-6">
-                        {" "}
-                        {/* Added mt-6 to align with circle top */}
                         <div
                           className={`
-                  w-24 h-1 rounded-full transition-all duration-500 ease-out
-                  ${
-                    isCompleted
-                      ? "bg-linear-to-r from-green-500 to-green-400"
-                      : "bg-slate-200 dark:bg-slate-700"
-                  }
-                `}
+                            w-24 h-1 rounded-full transition-all duration-500 ease-out
+                            ${
+                              isCompleted
+                                ? "bg-linear-to-r from-green-500 to-green-400"
+                                : "bg-slate-200 dark:bg-slate-700"
+                            }
+                          `}
                         />
                         {index === stepIndex - 1 && (
                           <div className="absolute w-24 h-1 rounded-full bg-linear-to-r from-green-500 to-green-400 animate-pulse" />
@@ -336,6 +391,7 @@ export default function AddProduct() {
               onValueChange={setCurrentStep}
               className="w-full"
             >
+              {/* Basic Information Step */}
               <TabsContent value="basic" className="space-y-6">
                 <FieldGroup>
                   <Controller
@@ -400,13 +456,14 @@ export default function AddProduct() {
                   </Button>
                   <Button
                     type="button"
-                    onClick={() => setCurrentStep("inventory")}
+                    onClick={() => handleNextStep("inventory")}
                   >
                     Next: Inventory & Pricing
                   </Button>
                 </div>
               </TabsContent>
 
+              {/* Inventory & Pricing Step */}
               <TabsContent value="inventory" className="space-y-6">
                 <FieldGroup>
                   <div className="flex flex-col md:flex-row items-center justify-center gap-6">
@@ -530,16 +587,20 @@ export default function AddProduct() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setCurrentStep("basic")}
+                    onClick={() => handlePreviousStep("basic")}
                   >
                     Previous
                   </Button>
-                  <Button type="button" onClick={() => setCurrentStep("media")}>
+                  <Button 
+                    type="button" 
+                    onClick={() => handleNextStep("media")}
+                  >
                     Next: Media & Description
                   </Button>
                 </div>
               </TabsContent>
 
+              {/* Media & Additional Info Step */}
               <TabsContent value="media" className="space-y-6">
                 <FieldGroup>
                   <Field>
@@ -673,19 +734,20 @@ export default function AddProduct() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setCurrentStep("inventory")}
+                    onClick={() => handlePreviousStep("inventory")}
                   >
                     Previous
                   </Button>
                   <Button
                     type="button"
-                    onClick={() => setCurrentStep("review")}
+                    onClick={() => handleNextStep("review")}
                   >
                     Review & Submit
                   </Button>
                 </div>
               </TabsContent>
 
+              {/* Review Step */}
               <TabsContent value="review" className="space-y-6">
                 <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-6 space-y-4">
                   <h3 className="font-semibold text-lg">Review Your Product</h3>
@@ -786,7 +848,7 @@ export default function AddProduct() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setCurrentStep("media")}
+                    onClick={() => handlePreviousStep("media")}
                   >
                     Previous
                   </Button>

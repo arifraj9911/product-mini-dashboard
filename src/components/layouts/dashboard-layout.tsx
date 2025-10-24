@@ -3,14 +3,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ChevronDown,
   Moon,
   Sun,
   LogIn,
   LogOut,
-//   User,
   Package,
   ShoppingCart,
   Menu,
@@ -26,17 +25,52 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isDark, setIsDark] = useState(false);
   const [productsOpen, setProductsOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [user, setUser] = useState<{ name: string; avatar?: string } | null>({
-    name: "Arif",
-    avatar: "https://i.pravatar.cc/40?img=12",
-  });
+  const [user, setUser] = useState<{
+    name: string;
+    email: string;
+    avatar?: string;
+  } | null>(null);
 
   const sidebarRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Load theme and user data from localStorage on component mount
+  useEffect(() => {
+    // Load theme
+    const savedTheme = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+
+    if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
+      document.documentElement.classList.add("dark");
+      setIsDark(true);
+    } else {
+      document.documentElement.classList.remove("dark");
+      setIsDark(false);
+    }
+
+    // Load user data
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      try {
+        const userObj = JSON.parse(userData);
+        setUser({
+          name: userObj.name || "User",
+          email: userObj.email,
+          avatar: userObj.avatar || "https://i.pravatar.cc/40?img=12",
+        });
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        setUser(null);
+      }
+    }
+  }, []);
 
   // Close sidebar when route changes on mobile
   useEffect(() => {
@@ -62,13 +96,37 @@ export default function DashboardLayout({
   }, [sidebarOpen]);
 
   const handleThemeToggle = () => {
-    document.documentElement.classList.toggle("dark");
-    setIsDark(!isDark);
+    const newDarkMode = !isDark;
+
+    if (newDarkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+
+    setIsDark(newDarkMode);
   };
 
-  const handleAuth = () => {
-    if (user) setUser(null);
-    else setUser({ name: "Arif", avatar: "https://i.pravatar.cc/40?img=12" });
+  const handleLogin = () => {
+    router.push("/");
+  };
+
+  const handleLogout = () => {
+    // Remove user data from localStorage
+    localStorage.removeItem("user");
+    localStorage.removeItem("rememberedEmail");
+    localStorage.removeItem("rememberedPassword");
+
+    // Clear cookies
+    document.cookie = "user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+    // Reset user state
+    setUser(null);
+
+    // Redirect to login page
+    router.push("/");
   };
 
   const toggleSidebar = () => {
@@ -217,7 +275,6 @@ export default function DashboardLayout({
                     Create Order
                   </span>
                 </Link>
-                
               </div>
             )}
           </div>
@@ -244,7 +301,14 @@ export default function DashboardLayout({
             </button>
 
             <h1 className="text-lg font-semibold bg-linear-to-r from-slate-800 to-slate-600 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-              Welcome back 👋
+              <div className="hidden sm:flex items-center gap-2">
+                <Avatar className="border-2 border-slate-300 dark:border-slate-600">
+                  <AvatarImage src={user?.avatar} />
+                  <AvatarFallback className="bg-linear-to-br from-cyan-500 to-blue-500 text-white">
+                    {user?.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
             </h1>
           </div>
 
@@ -255,6 +319,7 @@ export default function DashboardLayout({
               size="icon"
               onClick={handleThemeToggle}
               className="rounded-full border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
             >
               {isDark ? (
                 <Sun size={18} className="text-amber-500" />
@@ -266,21 +331,10 @@ export default function DashboardLayout({
             {/* Auth / Avatar */}
             {user ? (
               <div className="flex items-center gap-3">
-                <div className="hidden sm:flex items-center gap-2">
-                  <Avatar className="border-2 border-slate-300 dark:border-slate-600">
-                    <AvatarImage src={user.avatar} />
-                    <AvatarFallback className="bg-linear-to-br from-cyan-500 to-blue-500 text-white">
-                      {user.name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm font-medium hidden md:inline-block">
-                    {user.name}
-                  </span>
-                </div>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={handleAuth}
+                  onClick={handleLogout}
                   className="text-sm font-medium hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
@@ -291,7 +345,7 @@ export default function DashboardLayout({
               <Button
                 variant="default"
                 size="sm"
-                onClick={handleAuth}
+                onClick={handleLogin}
                 className="bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-sm"
               >
                 <LogIn className="w-4 h-4 mr-2" />

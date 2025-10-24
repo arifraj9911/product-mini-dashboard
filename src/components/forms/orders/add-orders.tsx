@@ -43,7 +43,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, Calendar, Package } from "lucide-react";
+import { CheckCircle2, Calendar, Package, AlertCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
 // Order form schema
@@ -74,6 +74,21 @@ type Product = {
   sku: string;
 };
 
+// Step validation schemas
+const stepSchemas = {
+  details: z.object({
+    clientName: orderFormSchema.shape.clientName,
+    deliveryAddress: orderFormSchema.shape.deliveryAddress,
+    expectedDeliveryDate: orderFormSchema.shape.expectedDeliveryDate,
+    paymentStatus: orderFormSchema.shape.paymentStatus,
+  }),
+  products: z.object({
+    products: orderFormSchema.shape.products,
+    deliveryStatus: orderFormSchema.shape.deliveryStatus,
+  }),
+  review: orderFormSchema,
+};
+
 export default function AddOrder() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState("details");
@@ -98,6 +113,7 @@ export default function AddOrder() {
       deliveryStatus: "pending",
       expectedDeliveryDate: "",
     },
+    mode: "onChange",
   });
 
   // Load products from localStorage
@@ -193,6 +209,36 @@ export default function AddOrder() {
     }
   }, [selectedProducts, form]);
 
+  // Validate current step before proceeding
+  const validateStep = async (step: string): Promise<boolean> => {
+    const stepSchema = stepSchemas[step as keyof typeof stepSchemas];
+
+    try {
+      await stepSchema.parseAsync(form.getValues());
+      return true;
+    } catch (error) {
+      // Trigger validation to show errors
+      await form.trigger(Object.keys(stepSchema.shape) as any);
+      return false;
+    }
+  };
+
+  const handleNextStep = async (nextStep: string) => {
+    const isValid = await validateStep(currentStep);
+    if (isValid) {
+      setCurrentStep(nextStep);
+    } else {
+      toast.error("Please fill all required fields correctly", {
+        description: "Check the form for errors before proceeding.",
+        position: "top-center",
+      });
+    }
+  };
+
+  const handlePreviousStep = (prevStep: string) => {
+    setCurrentStep(prevStep);
+  };
+
   // Handle form submission
   async function onSubmit(data: OrderFormData) {
     setIsSubmitting(true);
@@ -200,7 +246,9 @@ export default function AddOrder() {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      const existingOrders = JSON.parse(localStorage.getItem("order-data") || "[]");
+      const existingOrders = JSON.parse(
+        localStorage.getItem("order-data") || "[]"
+      );
 
       const newOrder = {
         orderId: generateOrderId(),
@@ -225,9 +273,9 @@ export default function AddOrder() {
         position: "top-center",
       });
 
-        setTimeout(() => {
-          router.push("/dashboard/orders");
-        }, 1000);
+      setTimeout(() => {
+        router.push("/dashboard/orders");
+      }, 1000);
     } catch (error: any) {
       toast.error("Failed to create order", {
         description: "Please try again later.",
@@ -245,6 +293,35 @@ export default function AddOrder() {
       currency: "USD",
     }).format(value);
   };
+
+  // Check if current step is valid
+  const isStepValid = (step: string): boolean => {
+    const stepFields = Object.keys(
+      stepSchemas[step as keyof typeof stepSchemas].shape
+    );
+    return stepFields.every(
+      (field) => !form.formState.errors[field as keyof OrderFormData]
+    );
+  };
+
+  const steps = [
+    {
+      id: "details",
+      label: "Client Details",
+      fields: [
+        "clientName",
+        "deliveryAddress",
+        "expectedDeliveryDate",
+        "paymentStatus",
+      ],
+    },
+    {
+      id: "products",
+      label: "Products",
+      fields: ["products", "deliveryStatus"],
+    },
+    { id: "review", label: "Review", fields: [] },
+  ];
 
   return (
     <div className="min-h-screen flex items-center justify-center md:p-4 bg-linear-to-br from-slate-50 to-blue-50 dark:from-neutral-900 dark:to-slate-900">
@@ -265,16 +342,17 @@ export default function AddOrder() {
             {/* Progress Indicator */}
             <div className="md:flex justify-center mb-12 hidden">
               <div className="flex items-start space-x-0.5">
-                {["details", "products", "review"].map((step, index) => {
-                  const stepIndex = ["details", "products", "review"].indexOf(
-                    currentStep
+                {steps.map((step, index) => {
+                  const stepIndex = steps.findIndex(
+                    (s) => s.id === currentStep
                   );
                   const isCompleted = index < stepIndex;
-                  const isCurrent = currentStep === step;
+                  const isCurrent = currentStep === step.id;
                   const isUpcoming = index > stepIndex;
+                  const isValid = isStepValid(step.id);
 
                   return (
-                    <React.Fragment key={step}>
+                    <React.Fragment key={step.id}>
                       <div className="flex flex-col items-center">
                         <div
                           className={`
@@ -289,17 +367,28 @@ export default function AddOrder() {
                                 ? "border-slate-300 bg-white text-slate-400 dark:border-slate-600 dark:bg-slate-800"
                                 : "border-blue-600 bg-white text-blue-600"
                             }
+                            ${
+                              !isValid && isCurrent
+                                ? "border-red-500 bg-red-500 text-white"
+                                : ""
+                            }
                           `}
                         >
                           {isCompleted ? (
                             <CheckCircle2 size={20} className="text-white" />
+                          ) : !isValid && isCurrent ? (
+                            <AlertCircle size={20} className="text-white" />
                           ) : (
                             <span className="flex items-center justify-center w-full h-full">
                               {index + 1}
                             </span>
                           )}
                           {isCurrent && (
-                            <div className="absolute inset-0 rounded-full bg-blue-600 animate-ping opacity-20" />
+                            <div
+                              className={`absolute inset-0 rounded-full animate-ping opacity-20 ${
+                                !isValid ? "bg-red-500" : "bg-blue-600"
+                              }`}
+                            />
                           )}
                         </div>
                         <span
@@ -307,19 +396,19 @@ export default function AddOrder() {
                             text-sm font-medium mt-3 capitalize transition-colors duration-200
                             ${
                               isCurrent
-                                ? "text-blue-600 dark:text-blue-400 font-semibold"
+                                ? !isValid
+                                  ? "text-red-600 dark:text-red-400 font-semibold"
+                                  : "text-blue-600 dark:text-blue-400 font-semibold"
                                 : isCompleted
                                 ? "text-green-600 dark:text-green-400"
                                 : "text-slate-500 dark:text-slate-400"
                             }
                           `}
                         >
-                          {step === "details" && "Client Details"}
-                          {step === "products" && "Products"}
-                          {step === "review" && "Review"}
+                          {step.label}
                         </span>
                       </div>
-                      {index < 2 && (
+                      {index < steps.length - 1 && (
                         <div className="relative flex items-start mt-6">
                           <div
                             className={`
@@ -458,7 +547,7 @@ export default function AddOrder() {
                     </Button>
                     <Button
                       type="button"
-                      onClick={() => setCurrentStep("products")}
+                      onClick={() => handleNextStep("products")}
                     >
                       Next: Select Products
                     </Button>
@@ -560,6 +649,17 @@ export default function AddOrder() {
                       </div>
                     )}
 
+                    {selectedProducts.length === 0 && (
+                      <div className="text-center py-8 text-slate-500">
+                        <Package
+                          size={48}
+                          className="mx-auto mb-4 opacity-50"
+                        />
+                        <p>No products selected</p>
+                        <p className="text-sm">Add products to continue</p>
+                      </div>
+                    )}
+
                     <Controller
                       name="deliveryStatus"
                       control={form.control}
@@ -596,13 +696,13 @@ export default function AddOrder() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setCurrentStep("details")}
+                      onClick={() => handlePreviousStep("details")}
                     >
                       Previous
                     </Button>
                     <Button
                       type="button"
-                      onClick={() => setCurrentStep("review")}
+                      onClick={() => handleNextStep("review")}
                       disabled={selectedProducts.length === 0}
                     >
                       Review Order
@@ -695,7 +795,7 @@ export default function AddOrder() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setCurrentStep("products")}
+                      onClick={() => handlePreviousStep("products")}
                     >
                       Previous
                     </Button>

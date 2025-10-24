@@ -1,12 +1,10 @@
-import TableContentNew from "@/components/tables/test/test-table";
-import Image from "next/image";
+import { LoginForm } from "@/components/forms/auth/login-form";
 import { Toaster } from "sonner";
 
 export default function Home() {
   return (
     <div className="">
-      <TableContentNew/>
-
+      <LoginForm />
       <Toaster />
     </div>
   );
