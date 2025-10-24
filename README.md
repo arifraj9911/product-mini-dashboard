@@ -3,7 +3,7 @@
 A simple and modern **Product Management Dashboard** built with **Next.js**.  
 This project demonstrates CRUD operations for **products and orders**, using mock APIs, local storage state management, and clean UI components.
 
-🔗 **Live Preview (Dev)**: [https://product-mini-dashboard.vercel.app/](Live Website)
+🔗 **Live Preview (Dev)**: [https://product-mini-dashboard.vercel.app/]
 
 ---
 
