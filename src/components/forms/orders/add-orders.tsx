@@ -49,11 +49,15 @@ import { Textarea } from "@/components/ui/textarea";
 // Order form schema
 const orderFormSchema = z.object({
   orderId: z.string().optional(),
-  products: z.array(z.object({
-    productId: z.string().min(1, "Product is required"),
-    quantity: z.number().min(1, "Quantity must be at least 1"),
-    price: z.number().min(0, "Price must be positive")
-  })).min(1, "At least one product is required"),
+  products: z
+    .array(
+      z.object({
+        productId: z.string().min(1, "Product is required"),
+        quantity: z.number().min(1, "Quantity must be at least 1"),
+        price: z.number().min(0, "Price must be positive"),
+      })
+    )
+    .min(1, "At least one product is required"),
   clientName: z.string().min(1, "Client name is required"),
   deliveryAddress: z.string().min(1, "Delivery address is required"),
   paymentStatus: z.enum(["paid", "pending", "refunded"]),
@@ -75,12 +79,14 @@ export default function AddOrder() {
   const [currentStep, setCurrentStep] = useState("details");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
-  const [selectedProducts, setSelectedProducts] = useState<Array<{
-    productId: string;
-    quantity: number;
-    price: number;
-    product?: Product;
-  }>>([]);
+  const [selectedProducts, setSelectedProducts] = useState<
+    Array<{
+      productId: string;
+      quantity: number;
+      price: number;
+      product?: Product;
+    }>
+  >([]);
 
   const form = useForm<OrderFormData>({
     resolver: zodResolver(orderFormSchema) as Resolver<OrderFormData>,
@@ -98,7 +104,7 @@ export default function AddOrder() {
   useEffect(() => {
     const loadProducts = () => {
       try {
-        const storedProducts = localStorage.getItem("products");
+        const storedProducts = localStorage.getItem("product-data");
         if (storedProducts) {
           const products = JSON.parse(storedProducts);
           setAvailableProducts(products);
@@ -113,7 +119,7 @@ export default function AddOrder() {
 
   // Calculate total amount
   const totalAmount = selectedProducts.reduce((total, item) => {
-    return total + (item.price * item.quantity);
+    return total + item.price * item.quantity;
   }, 0);
 
   // Generate order ID
@@ -123,15 +129,17 @@ export default function AddOrder() {
 
   // Add product to order
   const addProduct = (productId: string) => {
-    const product = availableProducts.find(p => p.id === productId);
+    const product = availableProducts.find((p) => p.id === productId);
     if (product) {
-      const existingItem = selectedProducts.find(item => item.productId === productId);
-      
+      const existingItem = selectedProducts.find(
+        (item) => item.productId === productId
+      );
+
       if (existingItem) {
         // Update quantity if product already exists
-        setSelectedProducts(prev => 
-          prev.map(item => 
-            item.productId === productId 
+        setSelectedProducts((prev) =>
+          prev.map((item) =>
+            item.productId === productId
               ? { ...item, quantity: item.quantity + 1 }
               : item
           )
@@ -142,23 +150,27 @@ export default function AddOrder() {
           productId,
           quantity: 1,
           price: product.price,
-          product
+          product,
         };
-        setSelectedProducts(prev => [...prev, newProduct]);
+        setSelectedProducts((prev) => [...prev, newProduct]);
       }
     }
   };
 
   // Remove product from order
   const removeProduct = (productId: string) => {
-    setSelectedProducts(prev => prev.filter(item => item.productId !== productId));
+    setSelectedProducts((prev) =>
+      prev.filter((item) => item.productId !== productId)
+    );
   };
 
   // Update product quantity
   const updateQuantity = (productId: string, quantity: number) => {
     if (quantity < 1) return;
-    
-    const product = selectedProducts.find(item => item.productId === productId);
+
+    const product = selectedProducts.find(
+      (item) => item.productId === productId
+    );
     if (product) {
       const availableStock = product.product?.stockQuantity || 0;
       if (quantity > availableStock) {
@@ -167,21 +179,19 @@ export default function AddOrder() {
       }
     }
 
-    setSelectedProducts(prev => 
-      prev.map(item => 
-        item.productId === productId 
-          ? { ...item, quantity }
-          : item
+    setSelectedProducts((prev) =>
+      prev.map((item) =>
+        item.productId === productId ? { ...item, quantity } : item
       )
     );
   };
 
   useEffect(() => {
-  // Set the products in form when selectedProducts changes
-  if (selectedProducts.length > 0) {
-    form.setValue("products", selectedProducts);
-  }
-}, [selectedProducts, form]);
+    // Set the products in form when selectedProducts changes
+    if (selectedProducts.length > 0) {
+      form.setValue("products", selectedProducts);
+    }
+  }, [selectedProducts, form]);
 
   // Handle form submission
   async function onSubmit(data: OrderFormData) {
@@ -190,9 +200,7 @@ export default function AddOrder() {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      const existingOrders = JSON.parse(
-        localStorage.getItem("orders") || "[]"
-      );
+      const existingOrders = JSON.parse(localStorage.getItem("order-data") || "[]");
 
       const newOrder = {
         orderId: generateOrderId(),
@@ -204,22 +212,22 @@ export default function AddOrder() {
         expectedDeliveryDate: data.expectedDeliveryDate,
         totalAmount: totalAmount,
         createdAt: new Date().toISOString(),
-        orderDate: new Date().toISOString().split('T')[0],
+        orderDate: new Date().toISOString().split("T")[0],
       };
 
       console.log("New order:", newOrder);
 
       const updatedOrders = [...existingOrders, newOrder];
-      localStorage.setItem("orders", JSON.stringify(updatedOrders));
+      localStorage.setItem("order-data", JSON.stringify(updatedOrders));
 
       toast.success("Order created successfully!", {
         description: `Order ${newOrder.orderId} has been created for ${data.clientName}.`,
         position: "top-center",
       });
 
-    //   setTimeout(() => {
-    //     router.push("/dashboard/orders");
-    //   }, 2000);
+        setTimeout(() => {
+          router.push("/dashboard/orders");
+        }, 1000);
     } catch (error: any) {
       toast.error("Failed to create order", {
         description: "Please try again later.",
@@ -248,7 +256,8 @@ export default function AddOrder() {
               Create New Order
             </CardTitle>
             <CardDescription>
-              Fill in the order details below. Fields marked with * are required.
+              Fill in the order details below. Fields marked with * are
+              required.
             </CardDescription>
           </CardHeader>
 
@@ -257,7 +266,9 @@ export default function AddOrder() {
             <div className="md:flex justify-center mb-12 hidden">
               <div className="flex items-start space-x-0.5">
                 {["details", "products", "review"].map((step, index) => {
-                  const stepIndex = ["details", "products", "review"].indexOf(currentStep);
+                  const stepIndex = ["details", "products", "review"].indexOf(
+                    currentStep
+                  );
                   const isCompleted = index < stepIndex;
                   const isCurrent = currentStep === step;
                   const isUpcoming = index > stepIndex;
@@ -400,7 +411,7 @@ export default function AddOrder() {
                               id="delivery-date"
                               type="date"
                               aria-invalid={fieldState.invalid}
-                              min={new Date().toISOString().split('T')[0]}
+                              min={new Date().toISOString().split("T")[0]}
                             />
                             {fieldState.invalid && (
                               <FieldError errors={[fieldState.error]} />
@@ -427,7 +438,9 @@ export default function AddOrder() {
                               <SelectContent>
                                 <SelectItem value="pending">Pending</SelectItem>
                                 <SelectItem value="paid">Paid</SelectItem>
-                                <SelectItem value="refunded">Refunded</SelectItem>
+                                <SelectItem value="refunded">
+                                  Refunded
+                                </SelectItem>
                               </SelectContent>
                             </Select>
                             {fieldState.invalid && (
@@ -466,7 +479,9 @@ export default function AddOrder() {
                         <SelectContent>
                           {availableProducts.map((product) => (
                             <SelectItem key={product.id} value={product.id}>
-                              {product.productName} - {formatCurrency(product.price)} (Stock: {product.stockQuantity})
+                              {product.productName} -{" "}
+                              {formatCurrency(product.price)} (Stock:{" "}
+                              {product.stockQuantity})
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -479,13 +494,21 @@ export default function AddOrder() {
                     {/* Selected Products List */}
                     {selectedProducts.length > 0 && (
                       <div className="space-y-3">
-                        <Label className="text-sm font-medium">Selected Products</Label>
+                        <Label className="text-sm font-medium">
+                          Selected Products
+                        </Label>
                         {selectedProducts.map((item) => (
-                          <div key={item.productId} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div
+                            key={item.productId}
+                            className="flex items-center justify-between p-3 border rounded-lg"
+                          >
                             <div className="flex-1">
-                              <p className="font-medium">{item.product?.productName}</p>
+                              <p className="font-medium">
+                                {item.product?.productName}
+                              </p>
                               <p className="text-sm text-slate-600 dark:text-slate-400">
-                                {formatCurrency(item.price)} × {item.quantity} = {formatCurrency(item.price * item.quantity)}
+                                {formatCurrency(item.price)} × {item.quantity} ={" "}
+                                {formatCurrency(item.price * item.quantity)}
                               </p>
                             </div>
                             <div className="flex items-center space-x-2">
@@ -493,18 +516,33 @@ export default function AddOrder() {
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                                onClick={() =>
+                                  updateQuantity(
+                                    item.productId,
+                                    item.quantity - 1
+                                  )
+                                }
                                 disabled={item.quantity <= 1}
                               >
                                 -
                               </Button>
-                              <span className="w-8 text-center">{item.quantity}</span>
+                              <span className="w-8 text-center">
+                                {item.quantity}
+                              </span>
                               <Button
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                                disabled={item.quantity >= (item.product?.stockQuantity || 0)}
+                                onClick={() =>
+                                  updateQuantity(
+                                    item.productId,
+                                    item.quantity + 1
+                                  )
+                                }
+                                disabled={
+                                  item.quantity >=
+                                  (item.product?.stockQuantity || 0)
+                                }
                               >
                                 +
                               </Button>
@@ -540,7 +578,9 @@ export default function AddOrder() {
                             <SelectContent>
                               <SelectItem value="pending">Pending</SelectItem>
                               <SelectItem value="shipped">Shipped</SelectItem>
-                              <SelectItem value="delivered">Delivered</SelectItem>
+                              <SelectItem value="delivered">
+                                Delivered
+                              </SelectItem>
                               <SelectItem value="canceled">Canceled</SelectItem>
                             </SelectContent>
                           </Select>
@@ -581,36 +621,65 @@ export default function AddOrder() {
                         <p className="text-sm font-mono">{generateOrderId()}</p>
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">Client Name</Label>
-                        <p className="text-sm">{form.watch("clientName") || "Not provided"}</p>
+                        <Label className="text-sm font-medium">
+                          Client Name
+                        </Label>
+                        <p className="text-sm">
+                          {form.watch("clientName") || "Not provided"}
+                        </p>
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">Delivery Address</Label>
-                        <p className="text-sm whitespace-pre-wrap">{form.watch("deliveryAddress") || "Not provided"}</p>
+                        <Label className="text-sm font-medium">
+                          Delivery Address
+                        </Label>
+                        <p className="text-sm whitespace-pre-wrap">
+                          {form.watch("deliveryAddress") || "Not provided"}
+                        </p>
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">Expected Delivery</Label>
-                        <p className="text-sm">{form.watch("expectedDeliveryDate") || "Not provided"}</p>
+                        <Label className="text-sm font-medium">
+                          Expected Delivery
+                        </Label>
+                        <p className="text-sm">
+                          {form.watch("expectedDeliveryDate") || "Not provided"}
+                        </p>
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">Payment Status</Label>
-                        <p className="text-sm capitalize">{form.watch("paymentStatus") || "Not provided"}</p>
+                        <Label className="text-sm font-medium">
+                          Payment Status
+                        </Label>
+                        <p className="text-sm capitalize">
+                          {form.watch("paymentStatus") || "Not provided"}
+                        </p>
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">Delivery Status</Label>
-                        <p className="text-sm capitalize">{form.watch("deliveryStatus") || "Not provided"}</p>
+                        <Label className="text-sm font-medium">
+                          Delivery Status
+                        </Label>
+                        <p className="text-sm capitalize">
+                          {form.watch("deliveryStatus") || "Not provided"}
+                        </p>
                       </div>
                     </div>
 
                     {/* Order Items Summary */}
                     {selectedProducts.length > 0 && (
                       <div>
-                        <Label className="text-sm font-medium">Order Items</Label>
+                        <Label className="text-sm font-medium">
+                          Order Items
+                        </Label>
                         <div className="mt-2 space-y-2">
                           {selectedProducts.map((item) => (
-                            <div key={item.productId} className="flex justify-between text-sm">
-                              <span>{item.product?.productName} × {item.quantity}</span>
-                              <span>{formatCurrency(item.price * item.quantity)}</span>
+                            <div
+                              key={item.productId}
+                              className="flex justify-between text-sm"
+                            >
+                              <span>
+                                {item.product?.productName} × {item.quantity}
+                              </span>
+                              <span>
+                                {formatCurrency(item.price * item.quantity)}
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -656,16 +725,27 @@ export default function AddOrder() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-slate-600 dark:text-slate-400">Items:</span>
-                <span>{selectedProducts.reduce((sum, item) => sum + item.quantity, 0)}</span>
+                <span className="text-slate-600 dark:text-slate-400">
+                  Items:
+                </span>
+                <span>
+                  {selectedProducts.reduce(
+                    (sum, item) => sum + item.quantity,
+                    0
+                  )}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-600 dark:text-slate-400">Products:</span>
+                <span className="text-slate-600 dark:text-slate-400">
+                  Products:
+                </span>
                 <span>{selectedProducts.length}</span>
               </div>
               <div className="flex justify-between text-lg font-semibold border-t pt-2">
                 <span>Total Amount:</span>
-                <span className="text-green-600">{formatCurrency(totalAmount)}</span>
+                <span className="text-green-600">
+                  {formatCurrency(totalAmount)}
+                </span>
               </div>
             </div>
 
@@ -674,13 +754,15 @@ export default function AddOrder() {
               <div>
                 <Label className="text-sm font-medium">Payment Status</Label>
                 <p className="text-sm capitalize mt-1">
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    form.watch("paymentStatus") === "paid" 
-                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                      : form.watch("paymentStatus") === "pending"
-                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                      : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                  }`}>
+                  <span
+                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      form.watch("paymentStatus") === "paid"
+                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                        : form.watch("paymentStatus") === "pending"
+                        ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                        : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                    }`}
+                  >
                     {form.watch("paymentStatus") || "Pending"}
                   </span>
                 </p>
@@ -688,15 +770,17 @@ export default function AddOrder() {
               <div>
                 <Label className="text-sm font-medium">Delivery Status</Label>
                 <p className="text-sm capitalize mt-1">
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    form.watch("deliveryStatus") === "delivered" 
-                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                      : form.watch("deliveryStatus") === "shipped"
-                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                      : form.watch("deliveryStatus") === "canceled"
-                      ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                  }`}>
+                  <span
+                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      form.watch("deliveryStatus") === "delivered"
+                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                        : form.watch("deliveryStatus") === "shipped"
+                        ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                        : form.watch("deliveryStatus") === "canceled"
+                        ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                        : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                    }`}
+                  >
                     {form.watch("deliveryStatus") || "Pending"}
                   </span>
                 </p>

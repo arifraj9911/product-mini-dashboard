@@ -1,6 +1,16 @@
-/* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @next/next/no-img-element */
+
 "use client";
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 import * as React from "react";
 import {
@@ -24,6 +34,7 @@ import {
   Eye,
   Package,
   TrendingUp,
+  //   Truck,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -38,14 +49,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -56,25 +60,86 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
-import { apiService } from "@/lib/api/data-fetching";
-import { HashLoader } from "react-spinners";
+import { ProductProps } from "@/types/products-props";
 
-// Product type definition
-export type Product = {
-  id: string;
-  productName: string;
-  sku: string;
-  category: string;
-  price: number;
-  stockQuantity: number;
-  description?: string;
-  active: boolean;
-  createdAt: string;
-  satisfaction?: number;
-  deliveryProgress?: number;
-  salesData?: number[];
-  imageUrl?: string;
-};
+// Generate sample data if localStorage is empty
+const generateSampleData = (): ProductProps[] => [
+  {
+    id: "1",
+    productName: "Wireless Bluetooth Headphones",
+    sku: "AUDIO-001",
+    category: "Electronics",
+    price: 129.99,
+    stockQuantity: 60,
+    description: "High-quality wireless headphones with noise cancellation",
+    active: true,
+    createdAt: "2024-01-15",
+    satisfaction: 4,
+    deliveryProgress: 85,
+    salesData: [12, 19, 8, 15, 22, 18, 25],
+    imageUrl: "",
+  },
+  {
+    id: "2",
+    productName: "Ergonomic Office Chair",
+    sku: "FURN-001",
+    category: "Furniture",
+    price: 299.99,
+    stockQuantity: 8,
+    description: "Comfortable ergonomic chair for office use",
+    active: true,
+    createdAt: "2024-01-10",
+    satisfaction: 5,
+    deliveryProgress: 45,
+    salesData: [5, 8, 12, 6, 9, 11, 7],
+    imageUrl: "",
+  },
+  {
+    id: "3",
+    productName: "Cotton T-Shirt",
+    sku: "CLOTH-001",
+    category: "Clothing",
+    price: 24.99,
+    stockQuantity: 120,
+    description: "100% cotton comfortable t-shirt",
+    active: true,
+    createdAt: "2024-01-20",
+    satisfaction: 3,
+    deliveryProgress: 100,
+    salesData: [45, 38, 52, 48, 61, 55, 49],
+    imageUrl: "",
+  },
+  {
+    id: "4",
+    productName: "Smartphone Case",
+    sku: "ACC-001",
+    category: "Electronics",
+    price: 19.99,
+    stockQuantity: 0,
+    description: "Protective case for smartphones",
+    active: false,
+    createdAt: "2024-01-05",
+    satisfaction: 2,
+    deliveryProgress: 0,
+    salesData: [0, 0, 0, 0, 0, 0, 0],
+    imageUrl: "",
+  },
+  {
+    id: "5",
+    productName: "Desk Lamp",
+    sku: "FURN-002",
+    category: "Furniture",
+    price: 49.99,
+    stockQuantity: 55,
+    description: "LED desk lamp with adjustable brightness",
+    active: true,
+    createdAt: "2024-01-12",
+    satisfaction: 4,
+    deliveryProgress: 90,
+    salesData: [8, 12, 6, 14, 10, 13, 9],
+    imageUrl: "",
+  },
+];
 
 // Custom components for indicators
 const StockIndicator = ({ quantity }: { quantity: number }) => {
@@ -167,7 +232,7 @@ const SparklineChart = ({ data }: { data?: number[] }) => {
   );
 };
 
-export const columns: ColumnDef<Product>[] = [
+export const columns: ColumnDef<ProductProps>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -215,7 +280,7 @@ export const columns: ColumnDef<Product>[] = [
             className="w-8 h-8 object-cover rounded-lg"
           />
         ) : (
-          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center dark:bg-blue-900">
+          <div className=" w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center dark:bg-blue-900">
             <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           </div>
         )}
@@ -304,11 +369,7 @@ export const columns: ColumnDef<Product>[] = [
       </div>
     ),
     cell: ({ row }) => {
-      return (
-        <span className="flex justify-center">
-          <SparklineChart data={row.original.salesData} />
-        </span>
-      );
+      return <SparklineChart data={row.original.salesData} />;
     },
   },
   {
@@ -319,18 +380,26 @@ export const columns: ColumnDef<Product>[] = [
 
       const handleEdit = () => {
         toast.info(`Editing product: ${product.productName}`);
+        // Add your edit logic here
       };
 
       const handleDelete = () => {
         if (
           confirm(`Are you sure you want to delete ${product.productName}?`)
         ) {
+          const products = JSON.parse(localStorage.getItem("products") || "[]");
+          const updatedProducts = products.filter(
+            (p: ProductProps) => p.id !== product.id
+          );
+          localStorage.setItem("products", JSON.stringify(updatedProducts));
           toast.success(`Product ${product.productName} deleted successfully`);
+          window.dispatchEvent(new Event("storage")); // Trigger storage event to refresh data
         }
       };
 
       const handleView = () => {
         toast.info(`Viewing product: ${product.productName}`);
+        // Add your view logic here
       };
 
       return (
@@ -366,30 +435,8 @@ export const columns: ColumnDef<Product>[] = [
   },
 ];
 
-// Local storage utilities
-const STORAGE_KEY = "product-data";
-
-const saveToLocalStorage = (data: Product[]) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch (error) {
-    console.error("Error saving to localStorage:", error);
-  }
-};
-
-const loadFromLocalStorage = (): Product[] | null => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : null;
-  } catch (error) {
-    console.error("Error loading from localStorage:", error);
-    return null;
-  }
-};
-
-export default function ProductList() {
-  const [data, setData] = React.useState<Product[]>([]);
-  const [loading, setLoading] = React.useState(true);
+export default function TableContentNew() {
+  const [data, setData] = React.useState<ProductProps[]>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -397,49 +444,40 @@ export default function ProductList() {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
-  const [categoryFilter, setCategoryFilter] = React.useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = React.useState<string>("");
   const [priceRange, setPriceRange] = React.useState<[number, number]>([
     0, 1000,
   ]);
 
-  // Fetch data from API and manage localStorage
+  // Load data from localStorage
   React.useEffect(() => {
-    const fetchData = async () => {
+    const loadData = () => {
       try {
-        setLoading(true);
-
-        // First check if data exists in localStorage
-        const storedData = loadFromLocalStorage();
-
-        if (storedData && storedData.length > 0) {
-          console.log("Loading data from localStorage:", storedData);
-          setData(storedData);
+        const stored = localStorage.getItem("products");
+        if (stored) {
+          setData(JSON.parse(stored));
         } else {
-          // If no data in localStorage, fetch from API
-          console.log("No data in localStorage, fetching from API...");
-          const products = (await apiService.getProducts()) as Product[];
-          console.log("Fetched products from API:", products);
-          setData(products);
-          // Save to localStorage
-          saveToLocalStorage(products);
+          const sampleData = generateSampleData();
+          localStorage.setItem("products", JSON.stringify(sampleData));
+          setData(sampleData);
         }
       } catch (error) {
-        console.error("Error fetching products:", error);
-        toast.error("Failed to fetch products");
-      } finally {
-        setLoading(false);
+        console.error("Error loading products from localStorage:", error);
+        const sampleData = generateSampleData();
+        setData(sampleData);
       }
     };
 
-    fetchData();
-  }, []);
+    loadData();
 
-  // Update localStorage whenever data changes
-  React.useEffect(() => {
-    if (data.length > 0) {
-      saveToLocalStorage(data);
-    }
-  }, [data]);
+    // Listen for storage events (when data changes in other tabs/windows)
+    const handleStorageChange = () => {
+      loadData();
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   // Get unique categories for filter
   const categories = React.useMemo(() => {
@@ -450,9 +488,7 @@ export default function ProductList() {
   const filteredData = React.useMemo(() => {
     return data.filter((product) => {
       const matchesCategory =
-        categoryFilter === "all" ||
-        !categoryFilter ||
-        product.category === categoryFilter;
+        !categoryFilter || product.category === categoryFilter;
       const matchesPrice =
         product.price >= priceRange[0] && product.price <= priceRange[1];
       return matchesCategory && matchesPrice;
@@ -491,8 +527,12 @@ export default function ProductList() {
         `Are you sure you want to delete ${selectedRows.length} products?`
       )
     ) {
+      const products = JSON.parse(localStorage.getItem("products") || "[]");
       const selectedIds = selectedRows.map((row) => row.original.id);
-      const updatedProducts = data.filter((p) => !selectedIds.includes(p.id));
+      const updatedProducts = products.filter(
+        (p: ProductProps) => !selectedIds.includes(p.id)
+      );
+      localStorage.setItem("products", JSON.stringify(updatedProducts));
       setData(updatedProducts);
       setRowSelection({});
       toast.success(`Deleted ${selectedRows.length} products successfully`);
@@ -506,56 +546,29 @@ export default function ProductList() {
       return;
     }
 
+    const products = JSON.parse(localStorage.getItem("products") || "[]");
     const selectedIds = selectedRows.map((row) => row.original.id);
-    const updatedProducts = data.map((p) =>
+    const updatedProducts = products.map((p: ProductProps) =>
       selectedIds.includes(p.id) ? { ...p, active } : p
     );
+    localStorage.setItem("products", JSON.stringify(updatedProducts));
     setData(updatedProducts);
     toast.success(`Updated status for ${selectedRows.length} products`);
   };
-
-  // Clear localStorage data (for testing/debugging)
-  const clearLocalStorage = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    toast.info("Local storage cleared. Refresh to fetch from API again.");
-  };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-lg">
-          <HashLoader color="#182337" />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full space-y-4">
-      {/* Debug button - you can remove this in production */}
-      <div className="flex justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={clearLocalStorage}
-          className="text-xs"
-        >
-          Clear Cache
-        </Button>
-      </div>
-
+    <div className="overflow-hidden rounded-md border p-4 space-y-4">
       {/* Filters */}
       <div className="flex flex-col lg:flex-row gap-4 p-4 bg-white dark:bg-slate-800 rounded-lg border">
-        <div className="flex-1 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        <div className="flex-1 flex flex-col md:flex-row justify-start md:justify-between items-start md:items-center gap-4">
           {/* Category Filter */}
           <div>
             <label className="text-sm font-medium mb-2 block">Category</label>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger>
                 <SelectValue placeholder="All categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
+                <SelectItem value="All categories">All categories</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category} value={category}>
                     {category}
@@ -566,18 +579,18 @@ export default function ProductList() {
           </div>
 
           {/* Price Range Filter */}
-          <div className="flex-1 md:w-2/5 md:ml-auto">
+          <div className=" flex-1">
             <label className="text-sm font-medium mb-2 block md:w-2/5 md:ml-auto">
               Price Range: ${priceRange[0]} - ${priceRange[1]}
             </label>
             <Slider
               value={priceRange}
-              onValueChange={(value: number[]) =>
+              onValueChange={(value) =>
                 setPriceRange(value as [number, number])
               }
-              max={1000}
-              step={10}
-              className="w-full md:w-2/5 md:ml-auto"
+              max={5000}
+              step={20}
+              className="md:w-2/5 md:ml-auto"
             />
           </div>
         </div>
@@ -610,59 +623,23 @@ export default function ProductList() {
         </div>
       )}
 
-      {/* Table Controls */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Input
-          placeholder="Filter products..."
-          value={
-            (table.getColumn("productName")?.getFilterValue() as string) ?? ""
-          }
-          onChange={(event) =>
-            table.getColumn("productName")?.setFilterValue(event.target.value)
-          }
-          className="w-full sm:w-64"
-        />
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => (
-                <DropdownMenuCheckboxItem
-                  key={column.id}
-                  className="capitalize"
-                  checked={column.getIsVisible()}
-                  onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                >
-                  {column.id}
-                </DropdownMenuCheckboxItem>
-              ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      {/* Table */}
-      <div className="rounded-md border">
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
             ))}
           </TableHeader>
@@ -672,6 +649,7 @@ export default function ProductList() {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className="hover:bg-gray-50 dark:hover:bg-slate-800/50"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -697,11 +675,11 @@ export default function ProductList() {
         </Table>
       </div>
 
-      {/* Pagination */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="text-sm text-muted-foreground">
+      {/* Pagination and Summary */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
+        <div className="text-sm text-muted-foreground flex-1">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
+          {table.getFilteredRowModel().rows.length} product(s) selected.
         </div>
         <div className="flex items-center space-x-2">
           <Button
@@ -712,10 +690,13 @@ export default function ProductList() {
           >
             Previous
           </Button>
-          <span className="text-sm">
-            Page {table.getState().pagination.pageIndex + 1} of{" "}
-            {table.getPageCount()}
-          </span>
+          <div className="flex items-center gap-1 text-sm">
+            Page{" "}
+            <strong>
+              {table.getState().pagination.pageIndex + 1} of{" "}
+              {table.getPageCount()}
+            </strong>
+          </div>
           <Button
             variant="outline"
             size="sm"

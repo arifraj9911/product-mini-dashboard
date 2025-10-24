@@ -76,7 +76,7 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className="flex min-h-screen bg-linear-to-br from-slate-50 to-blue-50 dark:from-neutral-900 dark:to-slate-900 text-slate-900 dark:text-slate-100">
+    <div className="flex min-h-screen bg-linear-to-br from-slate-50 to-blue-50 dark:from-neutral-900 dark:to-slate-900 text-slate-900 dark:text-slate-100 overflow-hidden">
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
@@ -89,8 +89,8 @@ export default function DashboardLayout({
       <aside
         ref={sidebarRef}
         className={cn(
-          "fixed lg:static inset-y-0 left-0 z-50 w-64 bg-linear-to-b from-slate-800 to-slate-900 dark:from-slate-900 dark:to-slate-950 text-white flex flex-col transform transition-transform duration-300 ease-in-out lg:transform-none",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          "fixed lg:sticky lg:top-0 inset-y-0 left-0 z-50 w-64 bg-linear-to-b from-slate-800 to-slate-900 dark:from-slate-900 dark:to-slate-950 text-white flex flex-col transform transition-transform duration-300 ease-in-out lg:transform-none lg:translate-x-0",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Sidebar Header */}
@@ -112,7 +112,7 @@ export default function DashboardLayout({
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 mt-6 space-y-2 px-4">
+        <nav className="flex-1 mt-6 space-y-2 px-4 overflow-y-auto">
           {/* Products Dropdown */}
           <div>
             <button
@@ -229,10 +229,10 @@ export default function DashboardLayout({
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-h-screen w-full lg:w-[calc(100%-16rem)]">
         {/* Topbar */}
-        <header className="h-16 flex items-center justify-between px-4 lg:px-6 border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-sm">
+        <header className="h-16 flex items-center justify-between px-4 lg:px-6 border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-sm sticky top-0 z-30">
           <div className="flex items-center gap-4">
             {/* Mobile Menu Button */}
             <button
@@ -302,8 +302,8 @@ export default function DashboardLayout({
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-linear-to-br from-slate-50 to-blue-50 dark:from-neutral-900 dark:to-slate-900">
-          <div className="max-w-7xl mx-auto">{children}</div>
+        <main className="flex-1 overflow-auto p-4 lg:p-6 w-full">
+          <div className="max-w-7xl mx-auto w-full min-w-0">{children}</div>
         </main>
       </div>
     </div>

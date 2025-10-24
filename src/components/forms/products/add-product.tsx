@@ -167,7 +167,7 @@ export default function AddProduct() {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       const existingProducts = JSON.parse(
-        localStorage.getItem("products") || "[]"
+        localStorage.getItem("product-data") || "[]"
       );
 
       const newProduct = {
@@ -190,7 +190,7 @@ export default function AddProduct() {
 
       const updatedProducts = [...existingProducts, newProduct];
 
-      localStorage.setItem("products", JSON.stringify(updatedProducts));
+      localStorage.setItem("product-data", JSON.stringify(updatedProducts));
 
       toast.success("Product created successfully!", {
         description: `${data.productName} has been added to your catalog.`,
